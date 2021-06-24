@@ -6,10 +6,12 @@
 	"author": "kysika <kysika@foxmail.com>",
 	"license": "MIT",
 	"scripts": {
-		"test": "mocha core/__test__/**.test.ts --require ts-node/register"
+		"test": "mocha core/__test__/**.test.ts --require ts-node/register",
+		"dev:theme": "vite -c vite.config.js"
 	},
 	"dependencies": {
 		"@rollup/plugin-node-resolve": "^13.0.0",
+		"@sveltejs/vite-plugin-svelte": "^1.0.0-next.11",
 		"@types/fs-extra": "^9.0.11",
 		"@types/js-yaml": "^4.0.1",
 		"@types/markdown-it": "^12.0.2",
@@ -31,6 +33,7 @@
 		"ts-node": "^10.0.0",
 		"typescript": "^4.3.4",
 		"uuid": "^8.3.2",
+		"vite": "^2.3.8",
 		"yargs": "^17.0.1"
 	}
 }
