@@ -9,19 +9,26 @@
 		"test": "mocha core/__test__/*.test.ts --require ts-node/register"
 	},
 	"dependencies": {
-		"js-yaml": "^4.1.0",
-		"markdown-it": "^12.0.6",
-		"markdown-it-anchor": "^8.0.3",
-		"markdown-it-front-matter": "^0.2.3",
-		"markdown-it-toc-desc": "^1.3.0",
-		"uuid": "^8.3.2",
+		"@rollup/plugin-node-resolve": "^13.0.0",
+		"@types/fs-extra": "^9.0.11",
 		"@types/js-yaml": "^4.0.1",
 		"@types/markdown-it": "^12.0.2",
 		"@types/mocha": "^8.2.2",
 		"@types/node": "^15.12.4",
 		"@types/uuid": "^8.3.0",
+		"fs-extra": "^10.0.0",
+		"js-yaml": "^4.1.0",
+		"markdown-it": "^12.0.6",
+		"markdown-it-anchor": "^8.0.3",
+		"markdown-it-front-matter": "^0.2.3",
+		"markdown-it-toc-desc": "^1.3.0",
 		"mocha": "^9.0.1",
+		"rollup": "^2.52.2",
+		"rollup-plugin-svelte": "^7.1.0",
+		"svelte": "^3.38.3",
+		"svelte-preprocess": "^4.7.3",
 		"ts-node": "^10.0.0",
-		"typescript": "^4.3.4"
+		"typescript": "^4.3.4",
+		"uuid": "^8.3.2"
 	}
 }
