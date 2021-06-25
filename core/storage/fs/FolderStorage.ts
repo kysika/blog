@@ -2,6 +2,8 @@ import fs from "fs-extra";
 import path from "path";
 
 export class FolderStorage<T> {
+	private indexes = "__indexes__.json";
+
 	constructor(protected dir: string) {}
 
 	async list() {
@@ -24,7 +26,7 @@ export class FolderStorage<T> {
 		return fs.rm(filepath).catch(() => {});
 	}
 
-	async get(filename: string) {
+	async find(filename: string) {
 		const filepath = this.filepath(filename);
 		try {
 			await fs.access(filepath);
@@ -35,8 +37,16 @@ export class FolderStorage<T> {
 		}
 	}
 
+	async update(filename: string, update: T) {
+		const filePath = this.filepath(filename);
+		const target = await this.find(filePath);
+		if (target) {
+			return this.create(filename, update, true);
+		}
+	}
+
 	protected filepath(filename: string) {
-		return path.resolve(this.dir, filename + ".json");
+		return path.resolve(process.cwd(), this.dir, filename + ".json");
 	}
 
 	async __dangerour__clean(force: "-force-") {

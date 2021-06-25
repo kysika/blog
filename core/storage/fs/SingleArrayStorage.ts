@@ -13,15 +13,27 @@ export class SingleArrayStorage<T> {
 		}
 	}
 
-	protected async _remove(cb: (item: T) => boolean) {
-		const list = await this.list();
-		await this.write(list.filter(cb));
+	async remove(cb: (item: T, index: number) => boolean) {
+		const list = (await this.list()).filter((item, index) => !cb(item, index));
+		await this.write(list);
+		return list;
 	}
 
-	async add(ps: T) {
+	async update(cb: (item: T, index: number) => T) {
+		const list = (await this.list()).map(cb);
+		await this.write(list);
+		return list;
+	}
+
+	async find(cb: (item: T, index: number) => boolean) {
+		return (await this.list()).find(cb);
+	}
+
+	async create(ps: T) {
 		const list = await this.list();
 		list.push(ps);
 		await this.write(list);
+		return list;
 	}
 
 	protected async write(ps: T[]) {
