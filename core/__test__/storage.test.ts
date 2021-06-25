@@ -1,137 +1,120 @@
 import { deepStrictEqual, strictEqual, rejects } from "assert";
 import { rmdir } from "fs-extra";
-import { StoragePaths } from "../config";
-import { createStorage } from "../database";
-import { PostModel, PostPreview } from "../models/post";
+import { Stream } from "stream";
+import { SingleArrayStorage } from "../storage/fs/SingleArrayStorage";
+import { SingleJSONStorage } from "../storage/fs/SingleJSONStorage";
 
 const base = "core/__test__/__data__/";
 
-const StoragePaths: StoragePaths = {
-	homepage: base + "home.json",
-	tags: base + "tags.json",
-	posts: base + "posts",
+const sp = {
+	sas: base + "sas.json",
+	sjs: base + "tags.json",
+	fs: base + "posts",
 };
 
-const storage = createStorage(StoragePaths);
+describe("Storage Test", () => {
+	describe("SingleArrayStorage", () => {
+		const storage = new SingleArrayStorage<string>(sp.sas);
 
-describe("Storage", () => {
-	describe("Homepage Storage (include SingleArrayStorage)", () => {
-		const homepage = storage.homepage;
-
-		const p1 = PostModel.preview(PostModel.make({ title: "p1" }));
-
-		const p2 = PostModel.preview(PostModel.make({ title: "p2" }));
-
-		it("list is empty", async () => {
-			const list = await homepage.list();
-			strictEqual(list.length, 0);
+		beforeEach(async () => {
+			await storage.__dangerour__clean("-force-");
 		});
 
-		it("list has one item and [0] is p1", async () => {
-			await homepage.add(p1);
+		const p1 = "kyiska";
+		const p2 = "kysika2";
+		const p3 = "kysika3";
 
-			const list = await homepage.list();
-			strictEqual(list.length, 1);
-			deepStrictEqual(p1, list[0]);
-		});
-
-		it("list has two items, and [1] is p2", async () => {
-			await homepage.add(p2);
-			const list = await homepage.list();
+		// create
+		it("create 2 item, length is 2, first is p1 second is p2", async () => {
+			await storage.create(p1);
+			await storage.create(p2);
+			const list = await storage.list();
 			strictEqual(list.length, 2);
-			deepStrictEqual(p2, list[1]);
+			strictEqual(p1, list[0]);
+			strictEqual(p2, list[1]);
 		});
 
-		it("list has one item p1 when remove p2", async () => {
-			await homepage.removeById(p2.pid);
-			const list = await homepage.list();
-			strictEqual(list.length, 1);
-			deepStrictEqual(p1, list[0]);
+		// update
+		it("[0] is p3 when update", async () => {
+			await storage.create(p1);
+			let list = await storage.list();
+			strictEqual(list[0], p1);
+			list = await storage.update((item, index) => (index === 0 ? p3 : item));
+			strictEqual(list[0], p3);
 		});
 
-		it("list is empty when remove p1", async () => {
-			await homepage.removeById(p1.pid);
-			const list = await homepage.list();
+		// remove
+		it("remove p3 len is 1, remove p2, len is 0", async () => {
+			function remove(value: string) {
+				return storage.remove((item) => item === value);
+			}
+			await storage.create(p3);
+			await storage.create(p2);
+			let list = await remove(p3);
+			strictEqual(1, list.length);
+			strictEqual(p2, list[0]);
+			list = await remove(p2);
 			strictEqual(list.length, 0);
 		});
 
+		// clean
 		it("list is empty when clean all", async () => {
-			await homepage.add(p1);
-			await homepage.add(p2);
+			await storage.create(p1);
+			await storage.create(p2);
 
-			await homepage.__dangerour__clean("-force-");
-			const list = await homepage.list();
+			await storage.__dangerour__clean("-force-");
+			const list = await storage.list();
 			strictEqual(list.length, 0);
 		});
 	});
 
-	describe("Tags Storage (exclude SingleArrayStorage)", () => {
-		const tag = storage.tag;
+	describe("SingleJSONStorage", () => {
+		const storage = new SingleJSONStorage(sp.sjs);
 
-		it("list should be empty when remove one tag", async () => {
-			await tag.add("hello");
-			let list = await tag.list();
+		// append & get
+		it("append two key-value and get then", async () => {
+			await storage.set({ name: "s1" });
+			await storage.set({ age: 12 });
 
-			strictEqual(list.length, 1);
-			strictEqual(list[0], "hello");
+			const name = await storage.get("name");
+			const json = await storage.load();
 
-			await tag.remove("hello");
-			list = await tag.list();
-			strictEqual(list.length, 0);
+			strictEqual(name, "s1");
+			strictEqual(12, json.age);
+			deepStrictEqual({ name: "s1", age: 12 }, json);
+
+			await storage.set({ name: "new name" });
+			const newname = await storage.get("name");
+			const newJson = await storage.load();
+			strictEqual(newname, "new name");
+			strictEqual(newJson.name, "new name");
+			strictEqual(12, newJson.age);
+			deepStrictEqual({ age: 12, name: "new name" }, newJson);
+		});
+
+		// delete
+		it("delete name then get it", async () => {
+			await storage.delete("name");
+			const name = await storage.get("name");
+			const age = await storage.get("age");
+			const json = await storage.load();
+			strictEqual(12, age);
+			strictEqual(undefined, name);
+			deepStrictEqual({ age: 12 }, json);
+		});
+
+		//clean
+		it("clean all", async () => {
+			await storage.__dangerous__clean("-force-");
+			const json = await storage.load();
+			deepStrictEqual(json, {});
 		});
 	});
 
-	describe("Posts Storage (include FolderStorage)", () => {
-		const post = storage.post;
-
-		const p1 = PostModel.make({ title: "p1" });
-		const p2 = PostModel.make({ title: "p2" });
-
-		it("posts is empty when no data", async () => {
-			const list = await post.list();
-			strictEqual(list.length, 0);
-		});
-
-		it("post has one item && item has pi.pid + .json", async () => {
-			await post.create(p1.pid, p1);
-			const list = await post.list();
-			strictEqual(list.length, 1);
-			strictEqual(true, list.includes(p1.pid + ".json"));
-		});
-
-		it("post.get(filenam) will return p1", async () => {
-			const sp1 = await post.get(p1.pid);
-			deepStrictEqual(p1, sp1);
-		});
-
-		it("list has two item when insert p2, list include p2.pid", async () => {
-			await post.create(p2.pid, p2);
-			const list = await post.list();
-
-			strictEqual(list.length, 2);
-			strictEqual(true, list.includes(p2.pid + ".json"));
-			strictEqual(true, list.includes(p1.pid + ".json"));
-		});
-
-		it("p2 get & p1 get", async () => {
-			const sp1 = await post.get(p1.pid);
-			const sp2 = await post.get(p2.pid);
-			deepStrictEqual(sp1, p1);
-			deepStrictEqual(sp2, p2);
-		});
-
-		it("will get an error when create p1 twice", async () => {
-			rejects(() => post.create(p1.pid, p1));
-		});
-
-		it("will be empty when remove all", async () => {
-			await post.__dangerour__clean("-force-");
-			const list = await post.list();
-			strictEqual(0, list.length);
-		});
-	});
+	describe("Folder Storage", () => {});
 
 	after(async () => {
+		console.log("all done, clean test folder");
 		await rmdir(base, { recursive: true });
 	});
 });
