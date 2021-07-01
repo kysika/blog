@@ -1,9 +1,9 @@
 import { ensureFile, readFile, writeFile } from "fs-extra";
 
-export class SingleJSONStorage {
+export class SingleJSONStorage<T extends Record<string, unknown>> {
 	constructor(private file: string) {}
 
-	async set(data: Record<string, unknown>) {
+	async set(data: Partial<T>) {
 		const old = await this.load();
 		const json = Object.assign(old, data);
 		await this.write(json);
@@ -15,14 +15,14 @@ export class SingleJSONStorage {
 		await this.write(json);
 	}
 
-	private async write(data: Record<string, unknown>) {
+	private async write(data: Partial<T>) {
 		await ensureFile(this.file);
 		await writeFile(this.file, JSON.stringify(data), { flag: "w+", encoding: "utf-8" });
 	}
 
-	async get<T = unknown>(key: string) {
+	async get<S = unknown>(key: string): Promise<S | undefined> {
 		const json = await this.load();
-		return json[key] as T;
+		return json[key] as S;
 	}
 
 	async __dangerous__clean(force: "-force-") {
@@ -38,9 +38,9 @@ export class SingleJSONStorage {
 	async load() {
 		await ensureFile(this.file);
 		try {
-			return (JSON.parse(await readFile(this.file, "utf-8")) as Record<string, unknown>) || {};
+			return (JSON.parse(await readFile(this.file, "utf-8")) as Partial<T>) || {};
 		} catch (e) {
-			return {};
+			return {} as Partial<T>;
 		}
 	}
 }

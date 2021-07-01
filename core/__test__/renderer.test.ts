@@ -37,6 +37,7 @@ describe("create tag", () => {
 
 	it("get correct scripts", () => {
 		const result = createScriptTag(scripts);
-		const str = `<script>function run() {}</script src="./index.js">\<script></script>`;
+		const str = `\n<script>function run() {}</script>\n<script src="./index.js"></script>`;
+		strictEqual(str, result);
 	});
 });
